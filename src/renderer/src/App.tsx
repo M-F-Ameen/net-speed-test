@@ -109,6 +109,8 @@ function App() {
     {},
   );
   const [trafficMonitoring, setTrafficMonitoring] = useState(false);
+  const [trafficError, setTrafficError] = useState<string | null>(null);
+  const [trafficRequiresAdmin, setTrafficRequiresAdmin] = useState(false);
   const trafficIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // ── window state ──
@@ -163,11 +165,21 @@ function App() {
     const loadTrafficData = async () => {
       try {
         const res = await window.api?.traffic.getData();
-        if (res?.data) {
+        if (res?.error) {
+          setTrafficError(res.error.message || 'Failed to get traffic data');
+          setTrafficRequiresAdmin(res.error.requiresAdmin || false);
+          setTrafficData({});
+        } else if (res?.data) {
           setTrafficData(res.data);
+          setTrafficError(null);
+          setTrafficRequiresAdmin(false);
+        } else {
+          setTrafficError('No traffic data available');
+          setTrafficData({});
         }
-      } catch (err) {
-        // Silently ignore errors during background polling
+      } catch (err: any) {
+        setTrafficError(err?.message ?? 'Traffic monitoring error');
+        setTrafficData({});
       }
     };
 
@@ -816,9 +828,22 @@ function App() {
                     className="refresh-devices-btn"
                     onClick={() => {
                       loadNetworkInfo();
-                      window.api?.traffic.getData().then((res) => {
-                        if (res?.data) setTrafficData(res.data);
-                      }).catch(() => {});
+                      window.api?.traffic
+                        .getData()
+                        .then((res) => {
+                          if (res?.error) {
+                            setTrafficError(res.error.message || 'Failed to get traffic data');
+                            setTrafficRequiresAdmin(res.error.requiresAdmin || false);
+                            setTrafficData({});
+                          } else if (res?.data) {
+                            setTrafficData(res.data);
+                            setTrafficError(null);
+                            setTrafficRequiresAdmin(false);
+                          }
+                        })
+                        .catch((err) => {
+                          setTrafficError(err?.message ?? 'Traffic monitoring error');
+                        });
                     }}
                     disabled={netLoading}
                     title="Refresh devices and traffic"
@@ -856,6 +881,38 @@ function App() {
               {netInfo && netInfo.devices.length === 0 && (
                 <div className="empty-state">
                   No devices found on the local network.
+                </div>
+              )}
+
+              {trafficError && (
+                <div className="traffic-error">
+                  <div className="error-header">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="15" y1="9" x2="9" y2="15"/>
+                      <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    Real-time Traffic Data Unavailable
+                  </div>
+                  <p className="error-message">{trafficError}</p>
+                  {trafficRequiresAdmin && (
+                    <div className="admin-notice">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                      </svg>
+                      <span>Run NetPulse as Administrator to access network traffic statistics</span>
+                    </div>
+                  )}
                 </div>
               )}
 
