@@ -12,6 +12,7 @@ const {
   startTrafficMonitoring,
   stopTrafficMonitoring,
   getTrafficData,
+  seedDeviceIPs,
 } = require("./traffic");
 
 const isDev = !app.isPackaged || process.env.NODE_ENV === "development";
@@ -96,6 +97,10 @@ ipcMain.handle("window:get-state", (event) => {
 ipcMain.handle("network:get-info", async () => {
   try {
     const info = await getNetworkInfo();
+    // Seed traffic monitoring with discovered devices
+    if (info && info.devices) {
+      seedDeviceIPs(info.devices);
+    }
     return { data: info };
   } catch (err) {
     return { error: err.message || "Failed to get network info" };

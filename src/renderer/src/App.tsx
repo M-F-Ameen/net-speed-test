@@ -808,9 +808,34 @@ function App() {
                   </svg>
                   Devices on Network
                 </h2>
-                <span className="device-count">
-                  {netInfo?.devices.length ?? 0} found
-                </span>
+                <div className="devices-controls">
+                  <span className="device-count">
+                    {netInfo?.devices.length ?? 0} found
+                  </span>
+                  <button
+                    className="refresh-devices-btn"
+                    onClick={() => {
+                      loadNetworkInfo();
+                      window.api?.traffic.getData().then((res) => {
+                        if (res?.data) setTrafficData(res.data);
+                      }).catch(() => {});
+                    }}
+                    disabled={netLoading}
+                    title="Refresh devices and traffic"
+                  >
+                    <svg
+                      className={netLoading ? "spin" : ""}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <polyline points="23 4 23 10 17 10" />
+                      <polyline points="1 20 1 14 7 14" />
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               {netLoading && !netInfo && (

@@ -515,12 +515,46 @@
   padding-bottom: 0;
   border-bottom: none;
 }
+
+.devices-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .device-count {
   font-size: 0.75rem;
   color: #64748b;
   background: #1e293b;
   padding: 0.25rem 0.65rem;
   border-radius: 8px;
+}
+
+.refresh-devices-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+.refresh-devices-btn svg {
+  width: 16px;
+  height: 16px;
+}
+.refresh-devices-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #e2e8f0;
+  border-color: #334155;
+}
+.refresh-devices-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .device-list {
