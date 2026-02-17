@@ -63,6 +63,22 @@ declare global {
         unblock: (ip: string) => Promise<{ success?: boolean; error?: string }>;
         getBlocked: () => Promise<{ data?: string[] }>;
       };
+      traffic: {
+        getData: () => Promise<{
+          data?: Record<
+            string,
+            {
+              downloadSpeed: number;
+              uploadSpeed: number;
+              totalDownload: number;
+              totalUpload: number;
+              lastSeen: number;
+            }
+          >;
+        }>;
+        start: () => Promise<{ success?: boolean }>;
+        stop: () => Promise<{ success?: boolean }>;
+      };
     };
   }
 }

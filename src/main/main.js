@@ -8,6 +8,11 @@ const {
   getBlockedIPs,
   syncBlockedFromFirewall,
 } = require("./firewall");
+const {
+  startTrafficMonitoring,
+  stopTrafficMonitoring,
+  getTrafficData,
+} = require("./traffic");
 
 const isDev = !app.isPackaged || process.env.NODE_ENV === "development";
 const devServerURL = process.env.VITE_DEV_SERVER_URL;
@@ -50,6 +55,8 @@ const createWindow = () => {
 app.whenReady().then(async () => {
   // Sync firewall state from existing rules
   await syncBlockedFromFirewall().catch(() => {});
+  // Start traffic monitoring
+  startTrafficMonitoring(2000); // Update every 2 seconds
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -57,6 +64,7 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => {
+  stopTrafficMonitoring();
   if (process.platform !== "darwin") app.quit();
 });
 
@@ -137,4 +145,19 @@ ipcMain.handle("device:unblock", async (_event, ip) => {
 
 ipcMain.handle("device:get-blocked", () => {
   return { data: getBlockedIPs() };
+});
+
+// ── traffic monitoring ──
+ipcMain.handle("traffic:get-data", () => {
+  return { data: getTrafficData() };
+});
+
+ipcMain.handle("traffic:start", () => {
+  startTrafficMonitoring(2000);
+  return { success: true };
+});
+
+ipcMain.handle("traffic:stop", () => {
+  stopTrafficMonitoring();
+  return { success: true };
 });

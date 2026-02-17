@@ -34,9 +34,16 @@ const deviceApi = {
   getBlocked: () => ipcRenderer.invoke("device:get-blocked"),
 };
 
+const trafficApi = {
+  getData: () => ipcRenderer.invoke("traffic:get-data"),
+  start: () => ipcRenderer.invoke("traffic:start"),
+  stop: () => ipcRenderer.invoke("traffic:stop"),
+};
+
 contextBridge.exposeInMainWorld("api", {
   window: windowApi,
   speedTest: speedTestApi,
   network: networkApi,
   device: deviceApi,
+  traffic: trafficApi,
 });

@@ -45,6 +45,14 @@ interface Device {
   vendor: string;
 }
 
+interface TrafficData {
+  downloadSpeed: number; // bytes/sec
+  uploadSpeed: number; // bytes/sec
+  totalDownload: number; // total bytes
+  totalUpload: number; // total bytes
+  lastSeen: number; // timestamp
+}
+
 interface NetworkInfo {
   public: PublicInfo;
   local: LocalInterface[];
@@ -68,6 +76,12 @@ const fmtUptime = (s: number) => {
   return `${m}m`;
 };
 
+const fmtSpeed = (bytesPerSec: number) => {
+  if (bytesPerSec >= 1e6) return `${(bytesPerSec / 1e6).toFixed(1)} MB/s`;
+  if (bytesPerSec >= 1e3) return `${(bytesPerSec / 1e3).toFixed(0)} KB/s`;
+  return `${bytesPerSec.toFixed(0)} B/s`;
+};
+
 function App() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [tab, setTab] = useState<Tab>("speed");
@@ -89,6 +103,13 @@ function App() {
   const [blockedIPs, setBlockedIPs] = useState<Set<string>>(new Set());
   const [blockingIP, setBlockingIP] = useState<string | null>(null);
   const [confirmBlock, setConfirmBlock] = useState<string | null>(null);
+
+  // traffic monitoring state
+  const [trafficData, setTrafficData] = useState<Record<string, TrafficData>>(
+    {},
+  );
+  const [trafficMonitoring, setTrafficMonitoring] = useState(false);
+  const trafficIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // ── window state ──
   useEffect(() => {
@@ -120,14 +141,48 @@ function App() {
         if (res?.data) setBlockedIPs(new Set(res.data));
       })
       .catch(() => {});
+    // start traffic monitoring
+    startTrafficMonitoring();
   }, []);
 
   useEffect(
     () => () => {
       cleanupRef.current?.();
+      stopTrafficMonitoring();
     },
     [],
   );
+
+  // ── traffic monitoring ──
+  const startTrafficMonitoring = useCallback(() => {
+    if (trafficIntervalRef.current) return;
+
+    setTrafficMonitoring(true);
+    window.api?.traffic.start(); // Start backend monitoring
+
+    const loadTrafficData = async () => {
+      try {
+        const res = await window.api?.traffic.getData();
+        if (res?.data) {
+          setTrafficData(res.data);
+        }
+      } catch (err) {
+        // Silently ignore errors during background polling
+      }
+    };
+
+    loadTrafficData(); // Initial load
+    trafficIntervalRef.current = setInterval(loadTrafficData, 3000); // Poll every 3 seconds
+  }, []);
+
+  const stopTrafficMonitoring = useCallback(() => {
+    if (trafficIntervalRef.current) {
+      clearInterval(trafficIntervalRef.current);
+      trafficIntervalRef.current = null;
+    }
+    setTrafficMonitoring(false);
+    window.api?.traffic.stop();
+  }, []);
 
   // ── load network info ──
   const loadNetworkInfo = useCallback(async () => {
@@ -786,6 +841,8 @@ function App() {
                     <span>MAC Address</span>
                     <span>Hostname</span>
                     <span>Vendor</span>
+                    <span>Download</span>
+                    <span>Upload</span>
                     <span>Action</span>
                   </div>
                   {netInfo.devices.map((d, i) => {
@@ -793,6 +850,7 @@ function App() {
                     const isOwnIP = netInfo.local.some((l) => l.ip === d.ip);
                     const isProcessing = blockingIP === d.ip;
                     const isConfirming = confirmBlock === d.ip;
+                    const traffic = trafficData[d.ip];
                     return (
                       <div
                         key={i}
@@ -802,6 +860,12 @@ function App() {
                         <span className="mono dim">{d.mac}</span>
                         <span>{d.hostname || "—"}</span>
                         <span className="dim">{d.vendor || "Unknown"}</span>
+                        <span className="traffic-speed mono">
+                          {traffic ? fmtSpeed(traffic.downloadSpeed) : "—"}
+                        </span>
+                        <span className="traffic-speed mono">
+                          {traffic ? fmtSpeed(traffic.uploadSpeed) : "—"}
+                        </span>
                         <span className="device-action">
                           {isOwnIP ? (
                             <span className="own-badge">You</span>

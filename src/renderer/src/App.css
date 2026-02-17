@@ -531,7 +531,7 @@
 
 .device-row {
   display: grid;
-  grid-template-columns: 1.2fr 1.5fr 1fr 1.2fr 0.75fr;
+  grid-template-columns: 1.2fr 1.5fr 1fr 1.2fr 0.8fr 0.8fr 0.9fr;
   gap: 0.5rem;
   padding: 0.65rem 1rem;
   font-size: 0.82rem;
@@ -567,6 +567,11 @@
 }
 .dim {
   color: #64748b;
+}
+
+.traffic-speed {
+  color: #22d3ee;
+  font-size: 0.75rem;
 }
 
 /* ── loading / empty states ── */
